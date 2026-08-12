@@ -7,6 +7,7 @@
 - 수치는 실제 검색 결과에 근거해서만 작성하고, 출처를 함께 표기한다.
 - 표는 HTML <table>로 만든다.
 - 완성된 HTML 파일은 git add/commit/push까지 완료한다.
+- `<head>`에 `<meta name="viewport" content="width=device-width, initial-scale=1">`를 반드시 포함한다 (없으면 모바일 브라우저가 데스크톱 너비로 렌더링한 뒤 축소해서 글씨가 전부 깨알같이 보인다). 아래 디자인 가이드의 반응형 CSS와 `.table-scroll` 래퍼도 반드시 함께 적용한다.
 
 ## 리서치 범위 (2026-08-12 개편)
 
@@ -57,7 +58,31 @@ td.name { text-align: left; font-weight: 500; }
 .schedule-legend { display:flex; gap:16px; font-size:11.5px; color:#52514e; margin-bottom:28px; flex-wrap:wrap; }
 .schedule-legend span { display:inline-flex; align-items:center; gap:5px; }
 .schedule-legend i { width:9px; height:9px; border-radius:2px; display:inline-block; }
+
+/* 표 가로 스크롤 래퍼 (모바일에서 표가 찌그러지지 않도록 모든 <table>은 이 div로 감싼다) */
+.table-scroll { overflow-x:auto; -webkit-overflow-scrolling:touch; margin: 14px 0 20px; }
+.table-scroll table { margin: 0; }
+
+/* 반응형: 좁은 화면(모바일) 대응 */
+@media (max-width: 640px) {
+  body { padding: 16px 14px 48px; font-size: 15.5px; }
+  h1 { font-size: 21px; }
+  .subtitle { font-size: 13px; }
+  h2 { font-size: 17px; margin-top: 32px; }
+  h3 { font-size: 15px; }
+  table { font-size: 12.5px; }
+  th, td { padding: 6px 7px; }
+  .schedule-grid { display:flex; grid-template-columns: unset; overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 6px; scroll-snap-type: x proximity; }
+  .schedule-day { min-width: 168px; flex: 0 0 auto; scroll-snap-align: start; }
+  .note, .holding-box { font-size: 13px; }
+}
 ```
+
+### 반응형 · 표 규칙 (필수)
+
+- 모든 `<table>`은 `<div class="table-scroll"><table>...</table></div>` 형태로 감싼다. 열이 많은 표(등락률 상위 20/30종목 등)가 좁은 화면에서 찌그러지지 않고 옆으로 스크롤되도록 하기 위함이다.
+- "향후 5거래일 주요 일정" 카드는 데스크톱에서는 5열 그리드, 모바일(640px 이하)에서는 가로 스크롤 캐러셀로 자동 전환된다(위 CSS가 처리) — 별도 대응 불필요, CSS를 그대로 사용만 하면 된다.
+- 리포트 HTML `<head>`에는 항상 `<meta charset="utf-8">` 다음 줄에 `<meta name="viewport" content="width=device-width, initial-scale=1">`를 넣는다.
 
 ### 차트: 심플 가로 막대형 (필수)
 
