@@ -8,6 +8,14 @@
 - 표는 HTML <table>로 만든다.
 - 완성된 HTML 파일은 git add/commit/push까지 완료한다.
 - `<head>`에 `<meta name="viewport" content="width=device-width, initial-scale=1">`를 반드시 포함한다 (없으면 모바일 브라우저가 데스크톱 너비로 렌더링한 뒤 축소해서 글씨가 전부 깨알같이 보인다). 아래 디자인 가이드의 반응형 CSS와 `.table-scroll` 래퍼도 반드시 함께 적용한다.
+- 리포트 저장 직후 `reports/manifest.json`을 아래 명령으로 재생성해 같은 커밋에 포함한다 (루트의 index.html이 이 파일만 읽어 목록을 그린다 — GitHub API를 호출하지 않으므로 반드시 최신 상태로 유지해야 한다):
+  ```bash
+  python3 -c "
+  import json, os
+  files = sorted(f for f in os.listdir('reports') if f.endswith('.html'))
+  json.dump(files, open('reports/manifest.json', 'w'), ensure_ascii=False, indent=0)
+  "
+  ```
 
 ## 리서치 범위 (2026-08-12 개편)
 
@@ -38,6 +46,16 @@ td.name { text-align: left; font-weight: 500; }
 .sources li { margin-bottom: 4px; }
 .holding-box { background: #fff8e6; border: 1px solid #eda100; border-radius: 8px; padding: 14px 18px; margin: 16px 0; }
 .tag { display:inline-block; background:#eef4fc; color:#184f95; border-radius:4px; padding:1px 8px; font-size:12px; margin-left:6px; }
+
+/* 섹터/카테고리 태그 색상 (본문 중 종목명 옆에 섹터를 표시할 때 사용, 8색 고정 순환) */
+.tag-1 { background:#eef4fc; color:#184f95; } /* 파랑 */
+.tag-2 { background:#fdece2; color:#c14e1f; } /* 주황 */
+.tag-3 { background:#e4f7f0; color:#0f8c5f; } /* 청록 */
+.tag-4 { background:#fdf1d9; color:#8a6400; } /* 노랑 */
+.tag-5 { background:#fceaf0; color:#a83763; } /* 마젠타 */
+.tag-6 { background:#e3f3e3; color:#006300; } /* 초록 */
+.tag-7 { background:#ece9f8; color:#4a3aa7; } /* 보라 */
+.tag-8 { background:#fbe9e9; color:#b93534; } /* 빨강 */
 
 /* 향후 5거래일 주요 일정 카드 */
 .schedule-grid { display:grid; grid-template-columns: repeat(5, 1fr); gap:10px; margin: 16px 0 8px; }
@@ -138,6 +156,21 @@ leg = ax.legend(handles=[Patch(facecolor=UP, label="상승"), Patch(facecolor=DO
                  loc="lower right", frameon=False, fontsize=10, prop=fp)
 for t in leg.get_texts(): t.set_color(SUB)
 ```
+
+### 본문 수치는 가능한 한 차트로도 보여준다 (2026-08-12 개편, 필수)
+
+본문 서술 중 **등락률·수치가 3개 이상 나열되는 부분은 텍스트/표만으로 끝내지 말고 반드시 옆에 차트를 추가**한다. 예: "정오 기준 상승 섹터", "오늘 상승 섹터", 거래대금·상승률 상위 종목 등. 상단 대시보드 차트 1개로 끝내지 않는다 — 리포트 안에 차트가 여러 개 있어도 된다.
+
+- **방향성(상승/하락)이 있는 데이터**: 위 "심플 가로 막대형" 그대로, 상승=빨강/하락=파랑 유지.
+- **방향성 없이 항목끼리 비교만 하는 데이터**(섹터별 등락률처럼 전부 상승/전부 하락인 경우, 종류가 다른 항목 비교 등): 아래처럼 **8색 카테고리 팔레트를 순서대로 고정 배정**해 다채롭게 표현한다. 그래도 막대 끝 값 라벨링, 옅은 그리드, 축 테두리 제거 등 나머지 스타일 규칙은 동일하게 적용한다.
+
+```python
+# 방향성 없는 항목 비교용 8색 팔레트 (고정 순서로 배정 — 임의로 섞지 않는다)
+CAT = ["#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4", "#008300", "#4a3aa7", "#e34948"]
+# 예: labels를 값 내림차순 정렬한 뒤 colors = [CAT[i % 8] for i in range(len(labels))]
+```
+
+본문 중 종목명 옆에 섹터/카테고리를 짧게 표시하고 싶을 때는 위 CSS의 `.tag-1`~`.tag-8`을 섹터별로 고정 배정해서 쓴다(같은 섹터는 항상 같은 번호). 예: `<td class="name">한화오션 <span class="tag tag-6">조선</span></td>`.
 
 ### 향후 5거래일 주요 일정 카드 섹션 (신규, 0700 리포트 전용)
 

@@ -40,14 +40,13 @@ function dayLabel(dateStr) {
   return dateStr === todayStr ? { text: label + " · 오늘", isToday: true } : { text: label, isToday: false };
 }
 
-fetch("https://api.github.com/repos/pkj138/market-report/contents/reports")
+fetch("reports/manifest.json", { cache: "no-store" })
   .then(r => {
     if (!r.ok) throw new Error("목록을 불러오지 못했습니다 (" + r.status + ")");
     return r.json();
   })
   .then(files => {
     const reports = files
-      .map(f => f.name)
       .filter(n => /^\d{4}-\d{2}-\d{2}-\d{4}\.html$/.test(n))
       .map(n => {
         const m = n.match(/^(\d{4}-\d{2}-\d{2})-(\d{4})\.html$/);
