@@ -19,6 +19,29 @@
   .empty, .loading, .error { color: #898781; font-size: 13.5px; padding: 20px 0; }
   .error { color: #c0392b; }
   .hint { margin-top: 32px; border-top: 1px solid #e1e0d9; padding-top: 16px; font-size: 12.5px; color: #898781; }
+
+  .portfolio-section { margin-top: 40px; border-top: 1px solid #e1e0d9; padding-top: 20px; }
+  .portfolio-section h2 { font-size: 17px; margin: 0 0 4px; }
+  .portfolio-hint { font-size: 12.5px; color: #898781; margin-bottom: 14px; }
+  .holdings-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+  .holding-row { display: flex; align-items: center; gap: 8px; background: #fff; border: 1px solid #e1e0d9; border-radius: 8px; padding: 10px 12px; font-size: 14px; }
+  .holding-row .h-name { font-weight: 600; flex: 1; }
+  .holding-row .h-ticker { color: #898781; font-size: 12.5px; }
+  .holding-row .h-note { color: #52514e; font-size: 12px; flex: 2; }
+  .holding-del { border: 1px solid #e1e0d9; background: #fff; color: #c0392b; border-radius: 6px; padding: 5px 10px; font-size: 12.5px; cursor: pointer; }
+  .holding-del:hover { background: #fdece2; }
+  .add-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+  .add-row input { flex: 1; min-width: 100px; border: 1px solid #e1e0d9; border-radius: 6px; padding: 8px 10px; font-size: 13.5px; font-family: inherit; }
+  .add-row button, .token-box button { border: none; background: #2a78d6; color: #fff; border-radius: 6px; padding: 8px 14px; font-size: 13.5px; cursor: pointer; white-space: nowrap; }
+  .add-row button:disabled, .token-box button:disabled { background: #c9c8c2; cursor: not-allowed; }
+  details.token-settings { font-size: 12.5px; color: #52514e; margin-bottom: 10px; }
+  details.token-settings summary { cursor: pointer; color: #184f95; }
+  .token-box { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+  .token-box input { flex: 1; min-width: 160px; border: 1px solid #e1e0d9; border-radius: 6px; padding: 8px 10px; font-size: 13px; font-family: inherit; }
+  .token-note { margin-top: 6px; line-height: 1.5; }
+  .status-msg { font-size: 12.5px; margin-top: 8px; min-height: 1.5em; }
+  .status-msg.ok { color: #0f8c5f; }
+  .status-msg.err { color: #c0392b; }
 </style>
 </head>
 <body>
@@ -26,6 +49,31 @@
 <div class="subtitle">매일 07:00 · 12:00 · 18:00(KST) 자동 생성 — 최신순</div>
 <div id="content" class="loading">불러오는 중…</div>
 <div class="hint">이 페이지를 홈 화면에 추가하거나 북마크해두면 매일 새 리포트가 자동으로 위에 표시됩니다.</div>
+
+<div class="portfolio-section">
+  <h2>보유종목 관리</h2>
+  <div class="portfolio-hint">여기서 추가/삭제하면 GitHub에 바로 커밋됩니다. 이후 새로 생성되는 리포트부터 반영되며, 이미 만들어진 과거 리포트는 바뀌지 않습니다.</div>
+  <div id="holdings-list" class="holdings-list">불러오는 중…</div>
+  <div class="add-row">
+    <input id="new-ticker" placeholder="티커 (예: 005930)">
+    <input id="new-name" placeholder="종목명">
+    <input id="new-note" placeholder="메모 (선택)">
+    <button id="add-btn">추가</button>
+  </div>
+  <details class="token-settings">
+    <summary>GitHub 토큰 설정 (추가/삭제하려면 필요)</summary>
+    <div class="token-note">
+      이 저장소는 공개 저장소라, 이 페이지에 토큰을 미리 넣어둘 수 없습니다. 이 저장소(market-report) 하나에만 Contents 읽기/쓰기 권한을 준 <strong>fine-grained personal access token</strong>을 발급해 아래에 붙여넣으세요.
+      토큰은 서버로 전송되지 않고 이 브라우저 탭에만(sessionStorage) 저장되며, 탭을 닫으면 사라집니다. 단 <code>pkj138.github.io</code>는 계정의 모든 GitHub Pages 사이트가 같은 주소(origin)를 공유하므로, 같은 탭에서 다른 pkj138.github.io 사이트를 열면 이론적으로 접근 가능합니다 — 이 저장소 전용으로 범위를 좁힌 토큰만 사용하고, 다 쓰면 GitHub에서 토큰을 바로 삭제/만료시키는 걸 권장합니다.
+    </div>
+    <div class="token-box">
+      <input type="password" id="gh-token" placeholder="github_pat_...">
+      <button id="clear-token-btn">토큰 지우기</button>
+    </div>
+    <div class="token-note">토큰 없이 편집하려면 <a href="https://github.com/pkj138/market-report/edit/main/portfolio.json" target="_blank" rel="noopener">GitHub에서 portfolio.json 직접 수정</a>도 가능합니다.</div>
+  </details>
+  <div id="portfolio-status" class="status-msg"></div>
+</div>
 
 <script>
 const SLOT_LABEL = { "0700": "🌅 아침 (07:00)", "1200": "☀️ 정오 (12:00)", "1800": "🌆 마감 (18:00)" };
@@ -95,6 +143,167 @@ fetch("reports/manifest.json", { cache: "no-store" })
     el.className = "error";
     el.textContent = "오류: " + err.message;
   });
+
+// ---- 보유종목 관리 (GitHub Contents API 직접 커밋) ----
+(function () {
+  const REPO = "pkj138/market-report";
+  const FILE_PATH = "portfolio.json";
+  const TOKEN_KEY = "market-report-gh-token";
+
+  const listEl = document.getElementById("holdings-list");
+  const statusEl = document.getElementById("portfolio-status");
+  const tokenInput = document.getElementById("gh-token");
+  const addBtn = document.getElementById("add-btn");
+  const clearTokenBtn = document.getElementById("clear-token-btn");
+
+  const savedToken = sessionStorage.getItem(TOKEN_KEY);
+  if (savedToken) tokenInput.value = savedToken;
+  tokenInput.addEventListener("change", () => {
+    if (tokenInput.value) sessionStorage.setItem(TOKEN_KEY, tokenInput.value);
+  });
+  clearTokenBtn.addEventListener("click", () => {
+    sessionStorage.removeItem(TOKEN_KEY);
+    tokenInput.value = "";
+    setStatus("토큰을 지웠습니다.", true);
+  });
+
+  function setStatus(msg, ok) {
+    statusEl.textContent = msg;
+    statusEl.className = "status-msg " + (ok ? "ok" : "err");
+  }
+
+  function utf8ToBase64(str) {
+    const bytes = new TextEncoder().encode(str);
+    let binary = "";
+    const chunk = 0x8000;
+    for (let i = 0; i < bytes.length; i += chunk) {
+      binary += String.fromCharCode.apply(null, bytes.subarray(i, i + chunk));
+    }
+    return btoa(binary);
+  }
+
+  function base64ToUtf8(b64) {
+    const binary = atob(b64.replace(/\n/g, ""));
+    const bytes = Uint8Array.from(binary, c => c.charCodeAt(0));
+    return new TextDecoder().decode(bytes);
+  }
+
+  function todayKST() {
+    const kst = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Seoul" }));
+    return kst.toISOString().slice(0, 10);
+  }
+
+  async function fetchPortfolio() {
+    const res = await fetch(
+      `https://api.github.com/repos/${REPO}/contents/${FILE_PATH}?ref=main`,
+      { cache: "no-store", headers: { Accept: "application/vnd.github+json" } }
+    );
+    if (!res.ok) throw new Error("portfolio.json을 불러오지 못했습니다 (" + res.status + ")");
+    const data = await res.json();
+    return { sha: data.sha, portfolio: JSON.parse(base64ToUtf8(data.content)) };
+  }
+
+  async function commitPortfolio(portfolio, sha, message) {
+    const token = tokenInput.value.trim();
+    if (!token) throw new Error("먼저 GitHub 토큰을 입력하세요 (아래 'GitHub 토큰 설정' 펼치기).");
+    portfolio.updated = todayKST();
+    const res = await fetch(`https://api.github.com/repos/${REPO}/contents/${FILE_PATH}`, {
+      method: "PUT",
+      headers: {
+        Authorization: "token " + token,
+        Accept: "application/vnd.github+json",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        message,
+        content: utf8ToBase64(JSON.stringify(portfolio, null, 2) + "\n"),
+        sha,
+        branch: "main",
+      }),
+    });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error("커밋 실패 (" + res.status + "): " + (body.message || "알 수 없는 오류"));
+    }
+  }
+
+  function renderHoldings(holdings) {
+    listEl.innerHTML = "";
+    if (holdings.length === 0) {
+      listEl.textContent = "등록된 보유종목이 없습니다.";
+      return;
+    }
+    holdings.forEach((h, idx) => {
+      const row = document.createElement("div");
+      row.className = "holding-row";
+      row.innerHTML = `
+        <span class="h-name">${h.name}</span>
+        <span class="h-ticker">${h.ticker}</span>
+        <span class="h-note">${h.note || ""}</span>
+        <button class="holding-del" data-idx="${idx}">삭제</button>
+      `;
+      listEl.appendChild(row);
+    });
+    listEl.querySelectorAll(".holding-del").forEach(btn => {
+      btn.addEventListener("click", () => removeHolding(parseInt(btn.dataset.idx, 10)));
+    });
+  }
+
+  async function loadAndRender() {
+    try {
+      const { portfolio } = await fetchPortfolio();
+      renderHoldings(portfolio.holdings || []);
+    } catch (err) {
+      listEl.textContent = "";
+      setStatus("오류: " + err.message, false);
+    }
+  }
+
+  async function addHolding() {
+    const ticker = document.getElementById("new-ticker").value.trim();
+    const name = document.getElementById("new-name").value.trim();
+    const note = document.getElementById("new-note").value.trim();
+    if (!ticker || !name) {
+      setStatus("티커와 종목명을 입력하세요.", false);
+      return;
+    }
+    addBtn.disabled = true;
+    setStatus("저장 중…", true);
+    try {
+      const { sha, portfolio } = await fetchPortfolio();
+      portfolio.holdings = portfolio.holdings || [];
+      portfolio.holdings.push({ ticker, name, note });
+      await commitPortfolio(portfolio, sha, `Add ${name} to portfolio (via web UI)`);
+      document.getElementById("new-ticker").value = "";
+      document.getElementById("new-name").value = "";
+      document.getElementById("new-note").value = "";
+      setStatus(name + " 추가 완료.", true);
+      renderHoldings(portfolio.holdings);
+    } catch (err) {
+      setStatus("오류: " + err.message, false);
+    } finally {
+      addBtn.disabled = false;
+    }
+  }
+
+  async function removeHolding(idx) {
+    setStatus("삭제 중…", true);
+    try {
+      const { sha, portfolio } = await fetchPortfolio();
+      const removed = (portfolio.holdings || [])[idx];
+      if (!removed) throw new Error("이미 목록이 바뀌었습니다. 새로고침 후 다시 시도하세요.");
+      portfolio.holdings.splice(idx, 1);
+      await commitPortfolio(portfolio, sha, `Remove ${removed.name} from portfolio (via web UI)`);
+      setStatus(removed.name + " 삭제 완료.", true);
+      renderHoldings(portfolio.holdings);
+    } catch (err) {
+      setStatus("오류: " + err.message, false);
+    }
+  }
+
+  addBtn.addEventListener("click", addHolding);
+  loadAndRender();
+})();
 </script>
 </body>
 </html>
