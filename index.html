@@ -78,11 +78,13 @@
 <script>
 const SLOT_LABEL = { "0700": "🌅 아침 (07:00)", "1200": "☀️ 정오 (12:00)", "1800": "🌆 마감 (18:00)" };
 
+function todayKST() {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Seoul" }).format(new Date());
+}
+
 function dayLabel(dateStr) {
   const d = new Date(dateStr + "T00:00:00+09:00");
-  const now = new Date();
-  const kstNow = new Date(now.toLocaleString("en-US", { timeZone: "Asia/Seoul" }));
-  const todayStr = kstNow.toISOString().slice(0, 10);
+  const todayStr = todayKST();
   const dow = ["일", "월", "화", "수", "목", "금", "토"][d.getDay()];
   const label = `${dateStr} (${dow})`;
   return dateStr === todayStr ? { text: label + " · 오늘", isToday: true } : { text: label, isToday: false };
@@ -188,11 +190,6 @@ fetch("reports/manifest.json", { cache: "no-store" })
     return new TextDecoder().decode(bytes);
   }
 
-  function todayKST() {
-    const kst = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Seoul" }));
-    return kst.toISOString().slice(0, 10);
-  }
-
   async function fetchPortfolio() {
     const res = await fetch(
       `https://api.github.com/repos/${REPO}/contents/${FILE_PATH}?ref=main`,
@@ -233,19 +230,29 @@ fetch("reports/manifest.json", { cache: "no-store" })
       listEl.textContent = "등록된 보유종목이 없습니다.";
       return;
     }
-    holdings.forEach((h, idx) => {
+    holdings.forEach(h => {
       const row = document.createElement("div");
       row.className = "holding-row";
-      row.innerHTML = `
-        <span class="h-name">${h.name}</span>
-        <span class="h-ticker">${h.ticker}</span>
-        <span class="h-note">${h.note || ""}</span>
-        <button class="holding-del" data-idx="${idx}">삭제</button>
-      `;
+
+      const nameSpan = document.createElement("span");
+      nameSpan.className = "h-name";
+      nameSpan.textContent = h.name;
+
+      const tickerSpan = document.createElement("span");
+      tickerSpan.className = "h-ticker";
+      tickerSpan.textContent = h.ticker;
+
+      const noteSpan = document.createElement("span");
+      noteSpan.className = "h-note";
+      noteSpan.textContent = h.note || "";
+
+      const delBtn = document.createElement("button");
+      delBtn.className = "holding-del";
+      delBtn.textContent = "삭제";
+      delBtn.addEventListener("click", () => removeHolding(h.ticker));
+
+      row.append(nameSpan, tickerSpan, noteSpan, delBtn);
       listEl.appendChild(row);
-    });
-    listEl.querySelectorAll(".holding-del").forEach(btn => {
-      btn.addEventListener("click", () => removeHolding(parseInt(btn.dataset.idx, 10)));
     });
   }
 
@@ -286,12 +293,13 @@ fetch("reports/manifest.json", { cache: "no-store" })
     }
   }
 
-  async function removeHolding(idx) {
+  async function removeHolding(ticker) {
     setStatus("삭제 중…", true);
     try {
       const { sha, portfolio } = await fetchPortfolio();
-      const removed = (portfolio.holdings || [])[idx];
-      if (!removed) throw new Error("이미 목록이 바뀌었습니다. 새로고침 후 다시 시도하세요.");
+      const idx = (portfolio.holdings || []).findIndex(h => h.ticker === ticker);
+      if (idx === -1) throw new Error("이미 목록이 바뀌었습니다. 새로고침 후 다시 시도하세요.");
+      const removed = portfolio.holdings[idx];
       portfolio.holdings.splice(idx, 1);
       await commitPortfolio(portfolio, sha, `Remove ${removed.name} from portfolio (via web UI)`);
       setStatus(removed.name + " 삭제 완료.", true);
