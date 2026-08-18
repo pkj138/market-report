@@ -1,7 +1,8 @@
 {
   "holdings": [
     {"ticker": "183300", "name": "KOMICO", "note": "2.5:1 액면분할, 8/20까지 거래정지, 8/21 재상장 예정"},
+    {"ticker": "005930", "name": "삼성전자", "note": ""},
     {"ticker": "SamsungElec2xETF", "name": "삼성전자 2배 레버리지 ETF", "note": ""}
   ],
-  "updated": "2026-08-12"
+  "updated": "2026-08-18"
 }
