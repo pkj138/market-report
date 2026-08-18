@@ -9,6 +9,11 @@
       "ticker": "SamsungElec2xETF",
       "name": "삼성전자 2배 레버리지 ETF",
       "note": ""
+    },
+    {
+      "ticker": "005930",
+      "name": "삼성전자",
+      "note": ""
     }
   ],
   "updated": "2026-08-18"
